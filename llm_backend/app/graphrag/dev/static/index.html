@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GraphRAG 查询界面</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4a6bff;
+            --primary-dark: #3a56cc;
+            --secondary-color: #64b5f6;
+            --accent-color: #e91e63;
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+            --dark-bg: #2c3e50;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --error-color: #f44336;
+            --card-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            --transition-speed: 0.3s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .page-wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--dark-bg);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+            transition: all var(--transition-speed);
+        }
+
+        h1 span {
+            color: var(--primary-color);
+        }
+
+        .subtitle {
+            color: #666;
+            font-weight: 300;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            padding: 30px;
+            transition: all var(--transition-speed);
+            margin-bottom: 30px;
+        }
+
+        .container:hover {
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            transform: translateY(-5px);
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0 30px;
+            position: relative;
+        }
+
+        .nav-links::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 10%;
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, #ddd, transparent);
+        }
+
+        .nav-links a {
+            padding: 10px 20px;
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+            border-radius: 30px;
+            transition: all var(--transition-speed);
+        }
+
+        .nav-links a:hover {
+            color: var(--primary-color);
+            background-color: rgba(74, 107, 255, 0.05);
+        }
+
+        .current-page {
+            color: var(--primary-color) !important;
+            background-color: rgba(74, 107, 255, 0.1);
+            box-shadow: 0 2px 10px rgba(74, 107, 255, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+            transition: all var(--transition-speed);
+        }
+
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all var(--transition-speed);
+            background-color: #fafafa;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 107, 255, 0.15);
+            background-color: white;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .options > div {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            padding-right: 40px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+            padding: 12px 15px;
+            background-color: rgba(74, 107, 255, 0.05);
+            border-radius: 8px;
+            transition: all var(--transition-speed);
+        }
+
+        .checkbox-container:hover {
+            background-color: rgba(74, 107, 255, 0.1);
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+            cursor: pointer;
+        }
+
+        .checkbox-container label {
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            display: block;
+            width: 100%;
+            transition: all var(--transition-speed);
+            box-shadow: 0 4px 10px rgba(74, 107, 255, 0.3);
+            margin-top: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 50%);
+            transform: translateY(-100%);
+            transition: transform 0.6s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-color) 100%);
+            box-shadow: 0 6px 15px rgba(74, 107, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        button:hover::before {
+            transform: translateY(100%);
+        }
+
+        button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(74, 107, 255, 0.2);
+        }
+
+        button i {
+            margin-right: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            margin: 40px 0;
+            display: none;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: var(--card-shadow);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .spinner {
+            border: 4px solid rgba(74, 107, 255, 0.1);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: #555;
+            font-weight: 500;
+        }
+
+        .result {
+            margin-top: 30px;
+            background-color: white;
+            border-left: 4px solid var(--success-color);
+            padding: 25px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            box-shadow: var(--card-shadow);
+            display: none;
+            animation: slideIn 0.5s;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result h3 {
+            margin-bottom: 15px;
+            color: var(--dark-bg);
+            display: flex;
+            align-items: center;
+        }
+
+        .result h3::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-right: 10px;
+            color: var(--success-color);
+        }
+
+        .result-content {
+            line-height: 1.7;
+            color: #444;
+        }
+
+        .error {
+            color: var(--error-color);
+            margin: 20px 0;
+            font-weight: 500;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: rgba(244, 67, 54, 0.1);
+            display: none;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        .error::before {
+            content: '\f06a';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            margin-right: 10px;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+            padding: 20px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .options {
+                flex-direction: column;
+            }
+            
+            .options > div {
+                width: 100%;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .nav-links {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .nav-links a {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .result {
+                max-height: 400px;
+            }
+        }
+
+        /* 深色模式支持 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #2c3e50 0%, #1a2530 100%);
+                color: #f5f5f5;
+            }
+            
+            .container, .result {
+                background-color: #34495e;
+                box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            }
+            
+            h1, .result h3 {
+                color: #ecf0f1;
+            }
+            
+            label, .subtitle {
+                color: #bdc3c7;
+            }
+            
+            input[type="text"], select, textarea {
+                background-color: #2c3e50;
+                border-color: #4a6bff;
+                color: #ecf0f1;
+            }
+            
+            input[type="text"]:focus, select:focus, textarea:focus {
+                background-color: #2c3e50;
+            }
+            
+            .nav-links a {
+                color: #bdc3c7;
+            }
+            
+            .checkbox-container {
+                background-color: rgba(74, 107, 255, 0.1);
+            }
+            
+            .result-content {
+                color: #ecf0f1;
+            }
+            
+            .loading {
+                background-color: rgba(52, 73, 94, 0.8);
+            }
+            
+            .loading p {
+                color: #ecf0f1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="header">
+            <h1>Graph<span>RAG</span> 查询界面</h1>
+            <p class="subtitle">基于知识图谱的检索增强生成系统</p>
+        </div>
+        
+        <div class="container">
+            <div class="nav-links">
+                <a href="/" class="current-page"><i class="fas fa-search"></i> 标准查询</a>
+                <a href="/stream"><i class="fas fa-stream"></i> 流式查询 (Markdown)</a>
+            </div>
+            
+            <div class="form-group">
+                <label for="query"><i class="fas fa-question-circle"></i> 请输入您的查询：</label>
+                <textarea id="query" placeholder="例如：GraphRAG系统有哪些核心功能？"></textarea>
+            </div>
+            
+            <div class="options">
+                <div class="form-group">
+                    <label for="query-type"><i class="fas fa-filter"></i> 查询类型：</label>
+                    <select id="query-type">
+                        <option value="local">局部查询 (Local)</option>
+                        <option value="global">全局查询 (Global)</option>
+                        <option value="drift">漂移查询 (Drift)</option>
+                        <option value="basic">基础查询 (Basic)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="response-type"><i class="fas fa-file-code"></i> 响应类型：</label>
+                    <select id="response-type">
+                        <option value="text">文本 (Text)</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="community-level"><i class="fas fa-layer-group"></i> 社区级别：</label>
+                    <select id="community-level">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="dynamic-community-selection">
+                    <label for="dynamic-community-selection">
+                        <i class="fas fa-random"></i> 启用动态社区选择
+                    </label>
+                </div>
+            </div>
+            
+            <button id="submit-btn"><i class="fas fa-paper-plane"></i> 提交查询</button>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p><i class="fas fa-sync-alt"></i> 正在处理查询，请稍候...</p>
+            </div>
+            
+            <div class="error" id="error"></div>
+            
+            <div class="result" id="result">
+                <h3>查询结果</h3>
+                <div class="result-content" id="result-content"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>GraphRAG 查询系统 &copy; 2025 | 基于知识图谱增强的检索式生成</p>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // 检查marked库是否成功加载
+        let markedLoaded = typeof marked !== 'undefined';
+        
+        // 如果没有加载成功，尝试再次加载
+        if (!markedLoaded) {
+            console.warn('Marked库未加载，尝试重新加载...');
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/marked@4.0.2/marked.min.js';
+            script.onload = function() {
+                console.log('Marked库已成功加载');
+                markedLoaded = true;
+            };
+            script.onerror = function() {
+                console.error('无法加载Marked库');
+            };
+            document.head.appendChild(script);
+        }
+
+        document.getElementById('submit-btn').addEventListener('click', async function() {
+            const query = document.getElementById('query').value.trim();
+            if (!query) {
+                showError('请输入查询内容');
+                return;
+            }
+            
+            const queryType = document.getElementById('query-type').value;
+            const responseType = document.getElementById('response-type').value;
+            const communityLevel = parseInt(document.getElementById('community-level').value);
+            const dynamicCommunitySelection = document.getElementById('dynamic-community-selection').checked;
+            
+            // 隐藏之前的结果和错误，显示加载中
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query,
+                        query_type: queryType,
+                        response_type: responseType,
+                        community_level: communityLevel,
+                        dynamic_community_selection: dynamicCommunitySelection
+                    })
+                });
+                
+                document.getElementById('loading').style.display = 'none';
+                
+                // 检查响应状态
+                if (!response.ok) {
+                    let errorMessage = '查询失败';
+                    try {
+                        // 尝试解析错误响应
+                        const errorData = await response.json();
+                        if (errorData && errorData.detail) {
+                            errorMessage = errorData.detail;
+                        }
+                    } catch (parseError) {
+                        // 如果解析失败，使用HTTP状态文本
+                        errorMessage = `查询失败 (${response.status}: ${response.statusText})`;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                // 先获取响应文本
+                const responseText = await response.text();
+                let data;
+                
+                // 尝试解析JSON
+                try {
+                    // 检查是否为空
+                    if (responseText.trim()) {
+                        data = JSON.parse(responseText);
+                    } else {
+                        throw new Error('服务器返回了空响应');
+                    }
+                } catch (jsonError) {
+                    console.error('JSON解析错误:', jsonError);
+                    console.log('原始响应:', responseText);
+                    throw new Error('无法解析服务器响应，可能是格式错误');
+                }
+                
+                // 显示结果
+                document.getElementById('result').style.display = 'block';
+                if (data && data.response) {
+                    // 检查marked是否可用，如果可用就渲染Markdown，否则fallback到纯文本
+                    if (typeof marked !== 'undefined') {
+                        document.getElementById('result-content').innerHTML = marked.parse(data.response);
+                    } else {
+                        // Fallback到纯文本显示，简单替换一些Markdown语法
+                        let formattedText = data.response
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                            .replace(/\n\n/g, '<br><br>')
+                            .replace(/\n###\s(.*?)\n/g, '<br><h3>$1</h3><br>');
+                        document.getElementById('result-content').innerHTML = formattedText;
+                    }
+                } else {
+                    document.getElementById('result-content').textContent = '服务器返回了空结果';
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                showError(error.message);
+                console.error('请求错误:', error);
+            }
+        });
+        
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            
+            // 自动隐藏错误消息
+            setTimeout(() => {
+                errorElement.style.opacity = '0';
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                    errorElement.style.opacity = '1';
+                }, 500);
+            }, 5000);
+        }
+        
+        // 给表单元素添加动画效果
+        const formElements = document.querySelectorAll('input, select, textarea');
+        formElements.forEach(element => {
+            element.addEventListener('focus', function() {
+                this.parentElement.querySelector('label').style.color = '#4a6bff';
+            });
+            
+            element.addEventListener('blur', function() {
+                this.parentElement.querySelector('label').style.color = '';
+            });
+        });
+    </script>
+</body>
+</html> 

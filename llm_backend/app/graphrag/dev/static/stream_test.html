@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GraphRAG 流式搜索测试</title>
+    <!-- 引入Markdown渲染库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .options {
+            display: flex;
+            gap: 20px;
+        }
+        .options > div {
+            flex: 1;
+        }
+        .stream-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .markdown-content {
+            overflow-wrap: break-word;
+        }
+        /* Markdown样式 */
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            color: #2c3e50;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }
+        .markdown-content p {
+            margin: 1em 0;
+        }
+        .markdown-content ul, .markdown-content ol {
+            padding-left: 2em;
+        }
+        .markdown-content code {
+            background-color: #f0f0f0;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+        }
+        .markdown-content pre {
+            background-color: #f0f0f0;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .markdown-content blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 1em;
+            margin-left: 0;
+            color: #666;
+        }
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .markdown-content th, .markdown-content td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .markdown-content tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-weight: bold;
+            display: none;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .nav-links {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .nav-links a {
+            display: inline-block;
+            margin: 0 10px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+        .current-page {
+            border-bottom: 2px solid #3498db;
+        }
+        .timer {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+            font-family: monospace;
+        }
+        .stats-container {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f8ff;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .stats-container h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        .stats-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        .stats-label {
+            width: 150px;
+            font-weight: bold;
+        }
+        .stats-value {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GraphRAG 流式搜索测试</h1>
+        
+        <div class="nav-links">
+            <a href="/">标准查询</a>
+            <a href="/stream">流式查询 (Markdown)</a>
+            <a href="/stream_sse">SSE流式查询</a>
+            <a href="/sync_test">同步查询测试</a>
+            <a href="/stream_test" class="current-page">流式搜索测试</a>
+            <a href="/simple">简易查询</a>
+        </div>
+        
+        <div class="form-group">
+            <label for="query">请输入您的查询：</label>
+            <textarea id="query" placeholder="例如：GraphRAG系统有哪些核心功能？"></textarea>
+        </div>
+        
+        <div class="options">
+            <div class="form-group">
+                <label for="query-type">查询类型：</label>
+                <select id="query-type">
+                    <option value="local">局部查询 (Local)</option>
+                    <option value="global">全局查询 (Global)</option>
+                    <option value="drift">漂移查询 (Drift)</option>
+                    <option value="basic">基础查询 (Basic)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="response-type">响应类型：</label>
+                <select id="response-type">
+                    <option value="text">文本 (Text)</option>
+                    <option value="json">JSON</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="community-level">社区级别：</label>
+                <select id="community-level">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="dynamic-community-selection">
+                启用动态社区选择
+            </label>
+        </div>
+        
+        <button id="submit-btn">开始流式搜索</button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在连接查询服务器...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="stats-container" id="stats-container" style="display: none;">
+            <h3>查询统计</h3>
+            <div class="stats-row">
+                <div class="stats-label">查询状态:</div>
+                <div class="stats-value" id="query-status">等待中</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">开始时间:</div>
+                <div class="stats-value" id="start-time">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">首字时间:</div>
+                <div class="stats-value" id="first-token-time">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">首字延迟:</div>
+                <div class="stats-value" id="first-token-latency">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">结束时间:</div>
+                <div class="stats-value" id="end-time">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">总耗时:</div>
+                <div class="stats-value" id="total-time">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">字符数:</div>
+                <div class="stats-value" id="token-count">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">平均速率:</div>
+                <div class="stats-value" id="token-rate">-</div>
+            </div>
+        </div>
+        
+        <div class="stream-container">
+            <div class="markdown-content" id="stream-content"></div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>GraphRAG 流式搜索测试 &copy; 2024</p>
+    </div>
+    
+    <script>
+        // 配置marked选项
+        marked.setOptions({
+            gfm: true,  // GitHub风格Markdown
+            breaks: true,  // 允许换行符换行
+            sanitize: false,  // 不转义HTML
+            smartLists: true,  // 更智能的列表行为
+            smartypants: true,  // 更智能的标点符号
+            xhtml: false  // 不使用xhtml样式的自闭合标签
+        });
+        
+        document.getElementById('submit-btn').addEventListener('click', async function() {
+            const query = document.getElementById('query').value.trim();
+            if (!query) {
+                showError('请输入查询内容');
+                return;
+            }
+            
+            const queryType = document.getElementById('query-type').value;
+            const responseType = document.getElementById('response-type').value;
+            const communityLevel = parseInt(document.getElementById('community-level').value);
+            const dynamicCommunitySelection = document.getElementById('dynamic-community-selection').checked;
+            
+            // 清空之前的内容并隐藏错误
+            const streamContent = document.getElementById('stream-content');
+            streamContent.innerHTML = '';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            
+            // 重置统计信息
+            document.getElementById('stats-container').style.display = 'block';
+            document.getElementById('query-status').textContent = '处理中...';
+            document.getElementById('start-time').textContent = new Date().toLocaleTimeString();
+            document.getElementById('first-token-time').textContent = '-';
+            document.getElementById('first-token-latency').textContent = '-';
+            document.getElementById('end-time').textContent = '-';
+            document.getElementById('total-time').textContent = '-';
+            document.getElementById('token-count').textContent = '0';
+            document.getElementById('token-rate').textContent = '-';
+            
+            const startTime = Date.now();
+            let firstTokenTime = 0;
+            let tokenCount = 0;
+            let content = '';
+            
+            try {
+                // 创建请求
+                const response = await fetch('/api/stream_test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query,
+                        query_type: queryType,
+                        response_type: responseType,
+                        community_level: communityLevel,
+                        dynamic_community_selection: dynamicCommunitySelection
+                    })
+                });
+                
+                // 隐藏加载图标
+                document.getElementById('loading').style.display = 'none';
+                
+                if (!response.ok) {
+                    throw new Error(`服务器错误: ${response.status}`);
+                }
+                
+                // 获取响应的Reader
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                // 处理流式响应
+                while (true) {
+                    const { value, done } = await reader.read();
+                    
+                    if (done) {
+                        console.log('流式传输完成');
+                        const endTime = Date.now();
+                        const duration = (endTime - startTime) / 1000;
+                        
+                        // 更新最终统计信息
+                        document.getElementById('query-status').textContent = '已完成';
+                        document.getElementById('end-time').textContent = new Date().toLocaleTimeString();
+                        document.getElementById('total-time').textContent = `${duration.toFixed(2)}秒`;
+                        
+                        if (tokenCount > 0) {
+                            const tokensPerSec = (tokenCount / duration).toFixed(1);
+                            document.getElementById('token-rate').textContent = `${tokensPerSec}字/秒`;
+                        }
+                        break;
+                    }
+                    
+                    // 解码数据块
+                    const text = decoder.decode(value, { stream: true });
+                    
+                    // 如果是首个字符，记录时间
+                    if (tokenCount === 0 && text.trim().length > 0) {
+                        firstTokenTime = Date.now();
+                        const latency = (firstTokenTime - startTime) / 1000;
+                        document.getElementById('first-token-time').textContent = new Date(firstTokenTime).toLocaleTimeString();
+                        document.getElementById('first-token-latency').textContent = `${latency.toFixed(2)}秒`;
+                    }
+                    
+                    // 更新字符计数和内容
+                    tokenCount += text.length;
+                    content += text;
+                    document.getElementById('token-count').textContent = tokenCount.toString();
+                    
+                    // 渲染Markdown
+                    streamContent.innerHTML = marked.parse(content);
+                    
+                    // 自动滚动到底部
+                    streamContent.parentElement.scrollTop = streamContent.parentElement.scrollHeight;
+                }
+                
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('query-status').textContent = '出错';
+                console.error('流式搜索错误:', error);
+            }
+        });
+        
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
+</body>
+</html> 

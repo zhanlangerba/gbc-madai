@@ -1,0 +1,11 @@
+productId:ID(Product),ProductName,SupplierID,CategoryID,QuantityPerUnit,UnitPrice,UnitsInStock,UnitsOnOrder,ReorderLevel,Discontinued,CategoryName,SupplierName,labels:LABEL
+1,华为 智能空气净化器 Basic,2,17,3个/套,6985.47,943,165,66,0,智能空气净化器,华为智能生活,Product
+2,三星 智能门锁 Advanced,6,4,2个/包,6184.32,410,176,35,0,智能门锁,三星智能家电,Product
+3,博世 智能音箱 Advanced,11,1,2个/包,7121.98,641,148,69,0,智能音箱,博世智能系统,Product
+4,博世 智能洗衣机 Basic,11,9,1套/箱,7773.85,551,48,66,0,智能洗衣机,博世智能系统,Product
+5,格力 智能马桶 Advanced,10,15,5个/套,5043.26,349,50,23,0,智能马桶,格力智能电器,Product
+6,美的 智能音箱 Advanced,9,1,5个/套,851.72,177,178,33,0,智能音箱,美的智能科技,Product
+7,苹果 智能门锁 Elite,3,4,5个/套,6552.63,218,16,75,0,智能门锁,苹果智能家庭,Product
+8,格力 智能洗衣机 Max,10,9,1个/盒,9135.13,996,14,22,1,智能洗衣机,格力智能电器,Product
+9,小米 智能手环 Mini,1,13,1台/件,3524.41,859,24,71,0,智能手环,小米智能家居,Product
+10,松下 智能空调 Basic,13,10,3个/套,5956.98,790,148,57,0,智能空调,松下智能电器,Product

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webserver测试</title>
+    <!-- 引入Markdown渲染库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .options {
+            display: flex;
+            gap: 20px;
+        }
+        .options > div {
+            flex: 1;
+        }
+        .response-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .markdown-content {
+            overflow-wrap: break-word;
+        }
+        /* Markdown样式 */
+        .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+            color: #2c3e50;
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }
+        .markdown-content p {
+            margin: 1em 0;
+        }
+        .markdown-content ul, .markdown-content ol {
+            padding-left: 2em;
+        }
+        .markdown-content code {
+            background-color: #f0f0f0;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+        }
+        .markdown-content pre {
+            background-color: #f0f0f0;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-weight: bold;
+            display: none;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .timer {
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+            font-family: monospace;
+        }
+        .stats-container {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f8ff;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .stats-container h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+        .stats-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        .stats-label {
+            width: 150px;
+            font-weight: bold;
+        }
+        .stats-value {
+            flex: 1;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background-color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Webserver 直接测试</h1>
+        
+        <div class="tabs">
+            <div class="tab active" id="sync-tab" onclick="showTab('sync')">同步查询</div>
+            <div class="tab" id="stream-tab" onclick="showTab('stream')">流式查询</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="query">请输入您的查询：</label>
+            <textarea id="query" placeholder="例如：GraphRAG系统有哪些核心功能？"></textarea>
+        </div>
+        
+        <div class="options">
+            <div class="form-group">
+                <label for="model">查询类型：</label>
+                <select id="model">
+                    <option value="index_local">局部查询 (Local)</option>
+                    <option value="index_global">全局查询 (Global)</option>
+                    <option value="index_drift">漂移查询 (Drift)</option>
+                    <option value="index_basic">基础查询 (Basic)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="community_level">社区级别：</label>
+                <select id="community_level">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="dynamic_community_selection">
+                启用动态社区选择
+            </label>
+        </div>
+        
+        <button id="submit-btn">开始查询</button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>正在处理查询...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="stats-container" id="stats-container" style="display: none;">
+            <h3>查询统计</h3>
+            <div class="stats-row">
+                <div class="stats-label">查询状态:</div>
+                <div class="stats-value" id="query-status">等待中</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">开始时间:</div>
+                <div class="stats-value" id="start-time">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">首字时间:</div>
+                <div class="stats-value" id="first-token-time">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">首字延迟:</div>
+                <div class="stats-value" id="first-token-latency">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">结束时间:</div>
+                <div class="stats-value" id="end-time">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">总耗时:</div>
+                <div class="stats-value" id="total-time">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">字符数:</div>
+                <div class="stats-value" id="token-count">-</div>
+            </div>
+            <div class="stats-row">
+                <div class="stats-label">平均速率:</div>
+                <div class="stats-value" id="token-rate">-</div>
+            </div>
+        </div>
+        
+        <div class="response-container">
+            <div class="markdown-content" id="response-content"></div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Webserver 测试 &copy; 2024</p>
+    </div>
+    
+    <script>
+        // 配置marked选项
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            sanitize: false,
+            smartLists: true,
+            smartypants: true,
+            xhtml: false
+        });
+        
+        // 当前选中的模式（同步或流式）
+        let currentMode = 'sync';
+        
+        // 切换标签页
+        function showTab(tabName) {
+            currentMode = tabName;
+            document.getElementById('sync-tab').classList.toggle('active', tabName === 'sync');
+            document.getElementById('stream-tab').classList.toggle('active', tabName === 'stream');
+        }
+        
+        document.getElementById('submit-btn').addEventListener('click', function() {
+            const query = document.getElementById('query').value.trim();
+            if (!query) {
+                showError('请输入查询内容');
+                return;
+            }
+            
+            if (currentMode === 'sync') {
+                handleSyncQuery(query);
+            } else {
+                handleStreamQuery(query);
+            }
+        });
+        
+        // 处理同步查询
+        async function handleSyncQuery(query) {
+            const model = document.getElementById('model').value;
+            const communityLevel = parseInt(document.getElementById('community_level').value);
+            const dynamicCommunitySelection = document.getElementById('dynamic_community_selection').checked;
+            
+            // 清空之前的内容并隐藏错误
+            const responseContent = document.getElementById('response-content');
+            responseContent.innerHTML = '';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('stats-container').style.display = 'none';
+            
+            const startTime = Date.now();
+            
+            try {
+                // 创建请求
+                const response = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            {
+                                role: "user",
+                                content: query
+                            }
+                        ],
+                        model: model,
+                        stream: false,
+                        community_level: communityLevel,
+                        dynamic_community_selection: dynamicCommunitySelection
+                    })
+                });
+                
+                const endTime = Date.now();
+                const duration = (endTime - startTime) / 1000;
+                
+                // 隐藏加载图标
+                document.getElementById('loading').style.display = 'none';
+                
+                if (!response.ok) {
+                    const errorData = await response.text();
+                    throw new Error(`服务器错误: ${response.status}\n${errorData}`);
+                }
+                
+                const result = await response.json();
+                
+                // 显示响应内容
+                const content = result.choices[0].message.content;
+                responseContent.innerHTML = marked.parse(content);
+                
+                // 创建并显示计时信息
+                const timerElement = document.createElement('div');
+                timerElement.className = 'timer';
+                timerElement.textContent = `查询完成 | 总耗时: ${duration.toFixed(2)}秒`;
+                responseContent.parentElement.appendChild(timerElement);
+                
+            } catch (error) {
+                showError(error.message);
+                console.error('同步查询错误:', error);
+            }
+        }
+        
+        // 处理流式查询
+        async function handleStreamQuery(query) {
+            const model = document.getElementById('model').value;
+            const communityLevel = parseInt(document.getElementById('community_level').value);
+            const dynamicCommunitySelection = document.getElementById('dynamic_community_selection').checked;
+            
+            // 清空之前的内容并隐藏错误
+            const responseContent = document.getElementById('response-content');
+            responseContent.innerHTML = '';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            
+            // 重置统计信息
+            document.getElementById('stats-container').style.display = 'block';
+            document.getElementById('query-status').textContent = '处理中...';
+            document.getElementById('start-time').textContent = new Date().toLocaleTimeString();
+            document.getElementById('first-token-time').textContent = '-';
+            document.getElementById('first-token-latency').textContent = '-';
+            document.getElementById('end-time').textContent = '-';
+            document.getElementById('total-time').textContent = '-';
+            document.getElementById('token-count').textContent = '0';
+            document.getElementById('token-rate').textContent = '-';
+            
+            const startTime = Date.now();
+            let firstTokenTime = 0;
+            let tokenCount = 0;
+            let content = '';
+            
+            try {
+                // 创建流式请求
+                const response = await fetch('/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: [
+                            {
+                                role: "user",
+                                content: query
+                            }
+                        ],
+                        model: model,
+                        stream: true,
+                        community_level: communityLevel,
+                        dynamic_community_selection: dynamicCommunitySelection
+                    })
+                });
+                
+                // 隐藏加载图标
+                document.getElementById('loading').style.display = 'none';
+                
+                if (!response.ok) {
+                    throw new Error(`服务器错误: ${response.status}`);
+                }
+                
+                // 处理事件流
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { value, done } = await reader.read();
+                    
+                    if (done) {
+                        console.log('流式传输完成');
+                        const endTime = Date.now();
+                        const duration = (endTime - startTime) / 1000;
+                        
+                        // 更新最终统计信息
+                        document.getElementById('query-status').textContent = '已完成';
+                        document.getElementById('end-time').textContent = new Date().toLocaleTimeString();
+                        document.getElementById('total-time').textContent = `${duration.toFixed(2)}秒`;
+                        
+                        if (tokenCount > 0) {
+                            const tokensPerSec = (tokenCount / duration).toFixed(1);
+                            document.getElementById('token-rate').textContent = `${tokensPerSec}字/秒`;
+                        }
+                        break;
+                    }
+                    
+                    // 解码数据块
+                    const chunk = decoder.decode(value, { stream: true });
+                    
+                    // 处理 SSE 格式
+                    const lines = chunk.split('\n\n');
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.substring(6);
+                            
+                            if (data === '[DONE]') {
+                                // 流结束
+                                continue;
+                            }
+                            
+                            try {
+                                const jsonData = JSON.parse(data);
+                                
+                                // 检查是否有内容
+                                if (jsonData.choices && jsonData.choices.length > 0 && jsonData.choices[0].delta) {
+                                    const delta = jsonData.choices[0].delta;
+                                    
+                                    if (delta.content) {
+                                        // 如果是首个字符，记录时间
+                                        if (tokenCount === 0) {
+                                            firstTokenTime = Date.now();
+                                            const latency = (firstTokenTime - startTime) / 1000;
+                                            document.getElementById('first-token-time').textContent = new Date(firstTokenTime).toLocaleTimeString();
+                                            document.getElementById('first-token-latency').textContent = `${latency.toFixed(2)}秒`;
+                                        }
+                                        
+                                        // 更新字符计数和内容
+                                        tokenCount += delta.content.length;
+                                        content += delta.content;
+                                        document.getElementById('token-count').textContent = tokenCount.toString();
+                                        
+                                        // 渲染Markdown
+                                        responseContent.innerHTML = marked.parse(content);
+                                        
+                                        // 自动滚动到底部
+                                        responseContent.parentElement.scrollTop = responseContent.parentElement.scrollHeight;
+                                    }
+                                }
+                            } catch (e) {
+                                console.error('解析数据出错:', e, data);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                showError(error.message);
+                document.getElementById('query-status').textContent = '出错';
+                console.error('流式查询错误:', error);
+            }
+        }
+        
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
+</body>
+</html> 

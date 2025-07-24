@@ -1,0 +1,44 @@
+models:
+  default_chat_model:
+    azure_auth_type: api_key
+    type: ${GRAPHRAG_LLM_TYPE}
+    api_key: ${GRAPHRAG_API_KEY}
+    api_base: ${GRAPHRAG_API_BASE}
+    api_version: ${GRAPHRAG_API_VERSION}
+    deployment_name: ${GRAPHRAG_LLM_DEPLOYMENT_NAME}
+    model: ${GRAPHRAG_LLM_MODEL}
+    tokens_per_minute: ${GRAPHRAG_LLM_TPM}
+    requests_per_minute: ${GRAPHRAG_LLM_RPM}
+    model_supports_json: true
+    concurrent_requests: 50
+    async_mode: threaded
+  default_embedding_model:
+    azure_auth_type: api_key
+    type: ${GRAPHRAG_EMBEDDING_TYPE}
+    api_key: ${GRAPHRAG_API_KEY}
+    api_base: ${GRAPHRAG_API_BASE}
+    api_version: ${GRAPHRAG_API_VERSION}
+    deployment_name: ${GRAPHRAG_EMBEDDING_DEPLOYMENT_NAME}
+    model: ${GRAPHRAG_EMBEDDING_MODEL}
+    tokens_per_minute: ${GRAPHRAG_EMBEDDING_TPM}
+    requests_per_minute: ${GRAPHRAG_EMBEDDING_RPM}
+    concurrent_requests: 50
+    async_mode: threaded
+
+vector_store:
+  default_vector_store:
+    type: "lancedb"
+    db_uri: "./tests/fixtures/min-csv/lancedb"
+    container_name: "lancedb_ci"
+    overwrite: True
+
+input:
+  file_type: csv
+
+snapshots:
+  embeddings: True
+
+drift_search:
+  n_depth: 1
+  drift_k_followups: 3
+  primer_folds: 3
