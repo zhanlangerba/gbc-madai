@@ -1,4 +1,5 @@
-# GBC MedAI - 智能医疗助手系统
+![logo](https://github.com/user-attachments/assets/2047749f-419f-4d2d-ab50-ff03c93d9896)
+
 
 <div align="center">
 
