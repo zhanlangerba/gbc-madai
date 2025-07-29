@@ -202,6 +202,11 @@ gbc-madai/
 │   └── vite.config.ts         # 构建配置
 └── README.md                  # 项目文档
 ```
+## ⭐️ 前置条件
+
+- 前端链接: https://pan.baidu.com/s/1KTROmn78XhhcuYBOfk0iUQ?pwd=wi8k 提取码: wi8k
+- GraphRag链接：链接: https://pan.baidu.com/s/1dg6YxN_a4wZCXrmHBPGj_Q?pwd=hppu 提取码: hppu
+
 
 ## 🚀 部署
 
@@ -247,7 +252,7 @@ python run.py
 本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
 ## 🛠 更新计划
 
-- 7月更新客服深度搜索
+- 7月更新客服深度搜索以及前端代码
 - 8月更新客服联网搜索
 
 
