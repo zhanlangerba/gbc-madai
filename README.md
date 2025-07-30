@@ -55,7 +55,7 @@
 - **样式**: CSS3 + 动画效果
 
 ### AI技术
-- **AI框架**: LangGraph+GraphRag
+- **AI框架**: LangGraph+GraphRag 
 
 - 
 ## 🚀 快速开始
