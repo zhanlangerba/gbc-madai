@@ -57,7 +57,11 @@
 ### AI技术
 - **AI框架**: LangGraph+GraphRag
 
-- 
+## 📋 系统架构
+<img width="500" height="301" alt="1753952681615" src="https://github.com/user-attachments/assets/4264f0aa-0b8b-4602-bd4d-acbf53954037" />
+
+
+
 ## 🚀 快速开始
 
 ### 📋 环境要求
